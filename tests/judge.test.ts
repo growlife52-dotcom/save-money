@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { characters, type Gesture } from '../src/lib/characters';
+import { characters, judgeCharacters, pickHomeCharacter, type Gesture } from '../src/lib/characters';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { candidates, categorize, decodeVerdict, encodeVerdict, characterFor, judge, parseVerdict, validatePurchase } from '../src/lib/judge';
@@ -46,7 +46,7 @@ test('v2 preserves chosen character and legacy v1 keeps the original pose',()=>{
  assert.deepEqual(parseVerdict(result),result);
  const old={version:1 as const,item:'커피',amount:5000,lineId:'cafe-1'};
  assert.deepEqual(decodeVerdict(encodeVerdict(old)),old);
- assert.equal(characterFor(old).src,'/character-photo-chin-smirk.svg');
+ assert.equal(characterFor(old).src,'/judge-boy.svg');
  assert.equal(parseVerdict({...result,characterId:'approve-base'}),null);
  assert.equal(parseVerdict({...result,characterId:'../../anything'}),null);
  assert.equal(parseVerdict({...result,characterId:undefined}),null);
@@ -57,12 +57,21 @@ test('gesture selection avoids the preceding gesture across eligible lines',()=>
   for(let i=0;i<40;i++) {
    const result=judge(item,5000,history,()=> (i%10)/10,previous);
    const character=characterFor(result);
-   if(item==='휴지')assert.equal(character.gesture,'base');
-   else assert.notEqual(character.gesture,previous);
+   assert.notEqual(character.gesture,previous);
+   assert.ok(judgeCharacters.some(c=>c.id===character.id));
    assert.ok(existsSync('public'+character.src));
    assert.deepEqual(decodeVerdict(encodeVerdict(result)),result);
    previous=character.gesture;history.push(result.lineId);
   }
  }
  for(const c of characters)assert.ok(existsSync('public'+c.src));
+});
+
+test('home is always the second photo and every category can select all three judges',()=>{
+ for(let i=0;i<10;i++)assert.equal(pickHomeCharacter(),'judge-boy');
+ for(const item of ['커피','휴지','밥','게임','옷']){
+  const chosen=new Set<string>();
+  for(const n of [0,.4,.8]){const v=judge(item,5000,[],()=>n);chosen.add(characterFor(v).id);}
+  assert.deepEqual([...chosen].sort(),judgeCharacters.map(c=>c.id).sort());
+ }
 });

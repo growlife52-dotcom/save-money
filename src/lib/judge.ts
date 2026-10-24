@@ -1,5 +1,5 @@
 import lines from '@/data/lines.json';
-import { characters, getCharacter, type Expression, type Gesture } from './characters';
+import { characters, judgeCharacters, getCharacter, type Expression, type Gesture } from './characters';
 export type { Expression } from './characters';
 export type Category = 'food' | 'cafe' | 'fashion' | 'hobby' | 'life' | 'other';
 type PurchaseResult = { item: string; amount: number; lineId: string };
@@ -32,7 +32,7 @@ export function judge(item: string, amount: number, history: string[] = [], rand
  const choices = unseen.length ? unseen : pool.filter(line => line.id !== history.at(-1));
  const available = choices.length ? choices : pool;
  const line = available[Math.min(available.length - 1, Math.floor(Math.max(0, random()) * available.length))];
- const eligible = characters.filter(c=>c.expression===line.expression&&line.gestures.includes(c.gesture));
+ const eligible = judgeCharacters;
  const different = eligible.filter(c=>c.gesture!==previousGesture);
  const options = different.length?different:eligible;
  const character = options[Math.min(options.length-1,Math.floor(Math.max(0,random())*options.length))];
@@ -44,8 +44,7 @@ export function getLine(verdict: Verdict) {
  return { ...line, expression: line.expression as Expression };
 }
 export function characterFor(verdict: Verdict) {
- const line=getLine(verdict);
- return getCharacter(verdict.version===2?verdict.characterId:`${line.expression}-base`);
+ return getCharacter(verdict.version===2?verdict.characterId:'judge-boy');
 }
 export function parseVerdict(value: unknown): Verdict | null {
  if (!value || typeof value !== 'object') return null;
@@ -55,7 +54,7 @@ export function parseVerdict(value: unknown): Verdict | null {
  if(!line)return null;
  const common={item:v.item.trim(),amount:v.amount,lineId:v.lineId};
  if(v.version===1)return {version:1,...common};
- const character=characters.find(c=>c.id===v.characterId&&c.expression===line.expression&&line.gestures.includes(c.gesture));
+ const character=characters.find(c=>c.id===v.characterId&&(judgeCharacters.some(j=>j.id===c.id)||(c.expression===line.expression&&line.gestures.includes(c.gesture))));
  return character?{version:2,...common,characterId:character.id}:null;
 }
 export function encodeVerdict(verdict: Verdict) {

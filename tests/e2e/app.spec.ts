@@ -7,6 +7,7 @@ test('mobile input, judgement, reroll, PNG export and portable sharing',async({p
  await expect(page.getByRole('heading',{name:'야 너 또 뭐 샀냐?'})).toBeVisible();
  await page.getByRole('button',{name:'심판받기'}).click();
  await expect(page.locator('p[role=alert]')).toContainText('뭘 샀는지');
+ await expect(page.locator('.character')).toHaveAttribute('src','/judge-boy.svg');
  const homeCharacter=await page.locator('.character').getAttribute('src');
  await page.getByLabel('뭐 샀는데?').fill('마라탕');
  await expect(page.locator('.character')).toHaveAttribute('src',homeCharacter!);
@@ -68,6 +69,9 @@ test('mobile input, judgement, reroll, PNG export and portable sharing',async({p
  await page.getByRole('button',{name:'다른 거 심판받기'}).click();
  await expect(page.getByLabel('뭐 샀는데?')).toHaveValue('');
  await expect(page.getByLabel('얼마 썼는데?')).toHaveValue('');
+ await expect(page.locator('.character')).toHaveAttribute('src','/judge-boy.svg');
+ await page.reload();
+ await expect(page.locator('.character')).toHaveAttribute('src','/judge-boy.svg');
  await page.screenshot({path:'test-results/home-mobile.png',fullPage:true});
  expect(errors).toEqual([]);
 });
@@ -92,6 +96,6 @@ test('legacy shared links use the matching photo fallback',async({page})=>{
  const old={version:1,item:'커피',amount:5000,lineId:'cafe-1'};
  const encoded=Buffer.from(JSON.stringify(old)).toString('base64url');
  await page.goto('/?r='+encoded);
- await expect(page.locator('.result-character img')).toHaveAttribute('src','/character-photo-chin-smirk.svg');
+ await expect(page.locator('.result-character img')).toHaveAttribute('src','/judge-boy.svg');
  await expect(page.locator('.verdict-text')).toBeVisible();
 });

@@ -11,7 +11,7 @@ function readHistory(): string[] {
  try { const v: unknown = JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]'); return Array.isArray(v) ? v.filter((id): id is string => typeof id === 'string').slice(-100) : []; } catch { return []; }
 }
 function remember(id: string) { try { localStorage.setItem(HISTORY_KEY,JSON.stringify([...readHistory(),id].slice(-100))); } catch { /* Browsing with storage disabled still works. */ } }
-export default function Experience({initialVerdict = null, initialInvalidLink = false, homeCharacterId = 'smug-thinking'}:{initialVerdict?:Verdict|null;initialInvalidLink?:boolean;homeCharacterId?:string}) {
+export default function Experience({initialVerdict = null, initialInvalidLink = false, homeCharacterId = 'judge-boy'}:{initialVerdict?:Verdict|null;initialInvalidLink?:boolean;homeCharacterId?:string}) {
  const [verdict,setVerdict] = useState<Verdict|null>(initialVerdict);
  const [homeId,setHomeId] = useState(homeCharacterId);
  const lastGesture = useRef<Gesture|undefined>(initialVerdict?characterFor(initialVerdict).gesture:undefined);
@@ -59,7 +59,7 @@ export default function Experience({initialVerdict = null, initialInvalidLink = 
   const history = readHistory();
   if (verdict) history.push(verdict.lineId);
   let previousGesture = verdict?characterFor(verdict).gesture:lastGesture.current;
-  if(!previousGesture){try{const saved=localStorage.getItem('yattoo-gesture-v1');if(['base','thinking','chin-smirk','idea'].includes(saved??''))previousGesture=saved as Gesture;}catch{}}
+  if(!previousGesture){try{const saved=localStorage.getItem('yattoo-gesture-v1');if(['base','thinking','chin-smirk','idea','wallet','boy','shrug'].includes(saved??''))previousGesture=saved as Gesture;}catch{}}
   const result = judge(purchase,price,history,Math.random,previousGesture);
   lastGesture.current=characterFor(result).gesture;
   try{localStorage.setItem('yattoo-gesture-v1',lastGesture.current);}catch{}
