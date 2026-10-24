@@ -1,4 +1,4 @@
-import { getLine, type Verdict } from './judge';
+import { characterFor, getLine, type Verdict } from './judge';
 function wrap(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
  const result: string[] = [];
  for (const paragraph of text.split('\n')) {
@@ -24,7 +24,7 @@ export async function createStory(verdict: Verdict): Promise<Blob> {
  ctx.fillStyle = '#8d8a85'; ctx.font = '500 30px "Pretendard Variable", sans-serif'; ctx.fillText('소비는 네가, 심판은 내가.',540,197);
  const line = getLine(verdict);
  const img = new Image();
- img.src = `/character-${line.expression}.svg`;
+ img.src = characterFor(verdict).src;
  await img.decode();
  ctx.drawImage(img,110,270,860,860);
  ctx.fillStyle = '#292723'; ctx.font = '800 92px "Pretendard Variable", sans-serif';

@@ -8,3 +8,9 @@
 .share-disclosure{font-size:10px;color:#a59b8c;line-height:1.6;margin:0 0 12px}
 /* Keep the primary action close to the first mobile viewport. */
 @media(min-width:371px) and (max-width:699px){.header{height:76px}.intro{padding-top:16px}.intro h1{font-size:40px;margin-top:15px}.character-stage{height:286px}.character{width:292px;height:292px}.purchase-form{margin-top:21px}.input-card{padding:14px 15px 11px}.input-card>span{margin-bottom:6px}.form-heading{margin-bottom:15px}}
+.gesture-thinking{animation:gesture-think .38s ease-out both;transform-origin:50% 88%}
+.gesture-chin-smirk{animation:gesture-smirk .35s ease-out both}
+.gesture-idea{animation:gesture-idea .42s ease-out both}
+@keyframes gesture-think{from{transform:rotate(-4deg);opacity:.5}to{transform:rotate(0);opacity:1}}
+@keyframes gesture-smirk{from{transform:translateY(9px);opacity:.5}to{transform:translateY(0);opacity:1}}
+@keyframes gesture-idea{0%{transform:translateY(10px);opacity:.5}65%{transform:translateY(-5px);opacity:1}100%{transform:translateY(0);opacity:1}}

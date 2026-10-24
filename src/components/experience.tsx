@@ -3,15 +3,18 @@
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { categories, categorize, encodeVerdict, getLine, judge, validatePurchase, type Verdict } from '@/lib/judge';
+import { categories, categorize, encodeVerdict, characterFor, getLine, judge, validatePurchase, type Verdict } from '@/lib/judge';
+import { getCharacter, pickHomeCharacter, type Gesture } from '@/lib/characters';
 import { createStory } from '@/lib/story';
 const HISTORY_KEY = 'yattoo-history-v1';
 function readHistory(): string[] {
  try { const v: unknown = JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]'); return Array.isArray(v) ? v.filter((id): id is string => typeof id === 'string').slice(-100) : []; } catch { return []; }
 }
 function remember(id: string) { try { localStorage.setItem(HISTORY_KEY,JSON.stringify([...readHistory(),id].slice(-100))); } catch { /* Browsing with storage disabled still works. */ } }
-export default function Experience({initialVerdict = null, initialInvalidLink = false}:{initialVerdict?:Verdict|null;initialInvalidLink?:boolean}) {
+export default function Experience({initialVerdict = null, initialInvalidLink = false, homeCharacterId = 'smug-thinking'}:{initialVerdict?:Verdict|null;initialInvalidLink?:boolean;homeCharacterId?:string}) {
  const [verdict,setVerdict] = useState<Verdict|null>(initialVerdict);
+ const [homeId,setHomeId] = useState(homeCharacterId);
+ const lastGesture = useRef<Gesture|undefined>(initialVerdict?characterFor(initialVerdict).gesture:undefined);
  const [item,setItem] = useState('');
  const [amount,setAmount] = useState('');
  const [error,setError] = useState('');
@@ -49,13 +52,17 @@ export default function Experience({initialVerdict = null, initialInvalidLink = 
  },[sheet]);
  useEffect(()=>()=>{if(preview)URL.revokeObjectURL(preview);},[preview]);
  function reset() {
-  setVerdict(null); setInvalidLink(false); setError(''); setStatus(''); setShareUrl(''); setPng(null); setPreview(''); setItem(''); setAmount('');
+  setHomeId(pickHomeCharacter()); setVerdict(null); setInvalidLink(false); setError(''); setStatus(''); setShareUrl(''); setPng(null); setPreview(''); setItem(''); setAmount('');
   window.history.replaceState(null,'','/'); window.scrollTo({top:0,behavior:'instant'});
  }
  function makeVerdict(purchase: string, price: number) {
   const history = readHistory();
   if (verdict) history.push(verdict.lineId);
-  const result = judge(purchase,price,history);
+  let previousGesture = verdict?characterFor(verdict).gesture:lastGesture.current;
+  if(!previousGesture){try{const saved=localStorage.getItem('yattoo-gesture-v1');if(['base','thinking','chin-smirk','idea'].includes(saved??''))previousGesture=saved as Gesture;}catch{}}
+  const result = judge(purchase,price,history,Math.random,previousGesture);
+  lastGesture.current=characterFor(result).gesture;
+  try{localStorage.setItem('yattoo-gesture-v1',lastGesture.current);}catch{}
   remember(result.lineId); focusResult.current=true; setVerdict(result);setShareUrl('');setPng(null);setPreview('');setStatus('');
   window.history.replaceState(null,'',`/?r=${encodeVerdict(result)}`);
   window.scrollTo({top:0,behavior:reduce?'instant':'smooth'});
@@ -100,6 +107,7 @@ export default function Experience({initialVerdict = null, initialInvalidLink = 
   finally{setBusy('');}
  }
  const line=verdict?getLine(verdict):null;
+ const character=verdict?characterFor(verdict):getCharacter(homeId);
  return <>
   <div className="app-shell">
    <header className="header"><button className="wordmark" onClick={reset} aria-label="야또샀냐 처음으로">야또샀냐<span className="logo-dot">.</span></button><span className="header-note">너의 소비, 내가 좀 볼게</span></header>
@@ -107,7 +115,7 @@ export default function Experience({initialVerdict = null, initialInvalidLink = 
     <AnimatePresence mode="wait" initial={false}>
      {!verdict ? <motion.div key="home" initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} exit={{opacity:0}} transition={{duration:reduce?0:.25}}>
       <section className="intro"><span className="eyebrow"><span/>오늘도 결제한 너에게</span><h1>야 너 또<br className="tiny-break"/> 뭐 샀냐<span className="accent">?</span></h1><p>일단 말해봐. 안 혼낼게 ㅋㅋ</p></section>
-      <div className="character-stage"><div className="character-halo"/><motion.img className="character" src="/character-smug.svg" alt="빨간 티셔츠를 입고 능청스럽게 웃는 잼민이" width="600" height="600" animate={reduce?{}:{y:[0,-6,0]}} transition={{duration:4,repeat:Infinity,ease:'easeInOut'}} fetchPriority="high"/><span className="character-caption">판단은 빠르게, 잔소리는 짧게.</span></div>
+      <div className="character-stage"><div className="character-halo"/><img key={character.id} className={`character gesture-${character.gesture}`} src={character.src} alt={character.alt} width="600" height="600" fetchPriority="high"/><span className="character-caption">판단은 빠르게, 잔소리는 짧게.</span></div>
       <form className="purchase-form" onSubmit={submit} noValidate>
        <div className="form-heading"><span className="mini-line"/><h2>자, 어디 한번 들어보자</h2><span className="mini-line"/></div>
        <label className="input-card" htmlFor="item"><span>뭐 샀는데?</span><input id="item" name="item" value={item} onChange={e=>{setItem(e.target.value);setError('');}} maxLength={40} placeholder="예: 마라탕, 새 운동화, 아아" autoComplete="off" aria-describedby={error?'form-error':undefined} aria-invalid={!!error}/></label>
@@ -119,7 +127,7 @@ export default function Experience({initialVerdict = null, initialInvalidLink = 
       </form>
      </motion.div> : <motion.div key="result" initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} exit={{opacity:0}} transition={{duration:reduce?0:.3}} className="result">
       <span className="eyebrow"><span/>{categories[categorize(verdict.item)]}</span>
-      <div className="result-character"><img src={`/character-${line!.expression}.svg`} alt={`${line!.expression==='shock'?'깜짝 놀란':line!.expression==='approve'?'흐뭇하게 웃는':line!.expression==='laugh'?'빵 터진':'능청스럽게 웃는'} 잼민이`} width="600" height="600"/></div>
+      <div className="result-character"><img key={`${verdict.lineId}-${character.id}`} className={`gesture-${character.gesture}`} data-character-id={character.id} src={character.src} alt={character.alt} width="600" height="600"/></div>
       <h1 className="verdict-text" ref={node=>{headingRef.current=node;if(node&&focusResult.current){node.focus({preventScroll:true});focusResult.current=false;}}} tabIndex={-1}>{line!.text.split('\n').map((text,i)=><span key={i}>{text}</span>)}</h1>
       <p className="verdict-aside">잔소리 아니고… 팩트 체크야 ㅋㅋ</p>
       <div className="receipt"><p>{verdict.item}</p><strong>{verdict.amount.toLocaleString('ko-KR')}<span>원</span></strong></div>

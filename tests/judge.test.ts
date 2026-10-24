@@ -1,6 +1,8 @@
+import { existsSync } from 'node:fs';
+import { characters, type Gesture } from '../src/lib/characters';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { candidates, categorize, decodeVerdict, encodeVerdict, judge, parseVerdict, validatePurchase } from '../src/lib/judge';
+import { candidates, categorize, decodeVerdict, encodeVerdict, characterFor, judge, parseVerdict, validatePurchase } from '../src/lib/judge';
 test('Korean purchase categories and amount thresholds',()=>{
  assert.equal(categorize('아이스 아메리카노'),'cafe');
  assert.equal(categorize('마라탕 배달'),'food');
@@ -35,5 +37,32 @@ test('Unicode shared results round-trip and reject altered data',()=>{
  assert.equal(decodeVerdict('A'.repeat(2000)),null);
  assert.equal(parseVerdict({...result,amount:-1}),null);
  assert.equal(parseVerdict({...result,lineId:'fashion-1'}),null);
- assert.equal(parseVerdict({...result,version:2}),null);
+ assert.equal(parseVerdict({...result,version:3}),null);
+});
+
+test('v2 preserves chosen character and legacy v1 keeps the original pose',()=>{
+ const result=judge('커피',5000);
+ assert.equal(result.version,2);
+ assert.deepEqual(parseVerdict(result),result);
+ const old={version:1 as const,item:'커피',amount:5000,lineId:'cafe-1'};
+ assert.deepEqual(decodeVerdict(encodeVerdict(old)),old);
+ assert.equal(characterFor(old).src,'/character-smug.svg');
+ assert.equal(parseVerdict({...result,characterId:'approve-base'}),null);
+ assert.equal(parseVerdict({...result,characterId:'../../anything'}),null);
+ assert.equal(parseVerdict({...result,characterId:undefined}),null);
+});
+test('gesture selection avoids the preceding gesture across eligible lines',()=>{
+ for(const item of ['밥','커피','옷','게임','휴지','무언가']) {
+  let previous:Gesture|undefined;const history:string[]=[];
+  for(let i=0;i<40;i++) {
+   const result=judge(item,5000,history,()=> (i%10)/10,previous);
+   const character=characterFor(result);
+   if(item==='휴지')assert.equal(character.gesture,'base');
+   else assert.notEqual(character.gesture,previous);
+   assert.ok(existsSync('public'+character.src));
+   assert.deepEqual(decodeVerdict(encodeVerdict(result)),result);
+   previous=character.gesture;history.push(result.lineId);
+  }
+ }
+ for(const c of characters)assert.ok(existsSync('public'+c.src));
 });

@@ -25,6 +25,10 @@ npm run start
 - Next.js App Router · TypeScript · Tailwind CSS 4 · Motion
 - Pretendard 가변 폰트 자체 호스팅 (외부 CDN 요청 없음)
 - 오리지널 SVG 캐릭터 표정 4종: 능청, 웃음, 놀람, 인정
+- 초기 제스처 3종: 턱 괴고 고민하기, 턱 만지며 능청 웃기, 검지 들기. 표정별 검증 조합 7개를 추가하고, 인정 대사는 기본 자세 유지
+- 대사별 허용 제스처에서 무작위 선택. 가능한 경우 직전 제스처 제외. 홈 캐릭터는 접속·초기화 때만 선택하고 입력 중에는 고정
+- v2 결과에 characterId 저장. 화면·공유 PNG·공유 링크·DB에서 같은 캐릭터 사용. 기존 v1 결과는 기존 표정의 기본 자세로 복원
+- 제스처 등장 모션은 한 번만 실행하며 동작 줄이기 설정을 존중
 - `src/data/lines.json`: 카테고리·금액 조건별 대사 28개
 - `src/lib/judge.ts`: 키워드 분류, 금액 검증, 후보 내 중복 방지, 공유 데이터 검증
 - 입력: 항목 최대 40자, 1–999,999,999원 정수; 금액 쉼표 자동 표시
@@ -79,3 +83,22 @@ E2E는 프로덕션 서버를 자동 시작하고 시스템 Chromium을 사용�
 ## 디자인 및 자산
 
 제공된 텍스트 디자인 기준으로 제작했습니다. 확정 9:16 시안 원본이 제공되면 세부 치수·캐릭터 아트 방향을 맞출 수 있습니다. 캐릭터는 `public/character-*.svg`, 폰트 라이선스는 `public/fonts/Pretendard-LICENSE.txt`에 있습니다.
+
+## 제스처 데이터 유지
+
+`src/lib/characters.ts`에서 표정·제스처 조합과 자산 경로를 관리하고, `src/data/lines.json`의 `gestures`로 대사별 허용 후보를 지정합니다. 기존 조합 ID와 자산은 공유 링크 호환성을 위해 유지하세요. 배 잡고 웃기·두 손 들기·엄지 들기는 다음 단계 범위입니다.
+
+저장된 JSON은 v1과 v2를 모두 지원합니다. 최초 안내에 따라 생성한 Supabase 테이블은 별도 변경 없이 v2 결과를 저장합니다. 이전 버전의 `schema.sql`을 직접 적용해 `valid_verdict` 제약조건이 있는 DB라면 다음 SQL로 버전 검사만 확장하세요.
+
+```sql
+alter table public.shared_results drop constraint if exists valid_verdict;
+alter table public.shared_results add constraint valid_verdict check (
+  jsonb_typeof(verdict) = 'object'
+  and verdict ?& array['version','item','amount','lineId']
+  and (verdict->>'version') in ('1','2')
+  and char_length(verdict->>'item') between 1 and 40
+  and (verdict->>'amount')::numeric between 1 and 999999999
+);
+```
+
+현재 연결된 Supabase에서는 v2 결과 저장과 characterId 복원을 검증했습니다.

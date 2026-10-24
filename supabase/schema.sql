@@ -6,7 +6,7 @@ create table if not exists public.shared_results (
  constraint valid_verdict check (
   jsonb_typeof(verdict) = 'object'
   and verdict ?& array['version','item','amount','lineId']
-  and (verdict->>'version') = '1'
+  and (verdict->>'version') in ('1','2')
   and char_length(verdict->>'item') between 1 and 40
   and (verdict->>'amount')::numeric between 1 and 999999999
  )

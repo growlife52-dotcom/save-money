@@ -1,7 +1,9 @@
 import lines from '@/data/lines.json';
-export type Expression = 'smug' | 'laugh' | 'shock' | 'approve';
+import { characters, getCharacter, type Expression, type Gesture } from './characters';
+export type { Expression } from './characters';
 export type Category = 'food' | 'cafe' | 'fashion' | 'hobby' | 'life' | 'other';
-export type Verdict = { version: 1; item: string; amount: number; lineId: string };
+type PurchaseResult = { item: string; amount: number; lineId: string };
+export type Verdict = PurchaseResult & ({ version: 1 } | { version: 2; characterId: string });
 export const categories: Record<Category, string> = { food: '먹고 마신 것', cafe: '커피와 디저트', fashion: '옷과 꾸밈', hobby: '취미와 즐거움', life: '살아가는 데 필요한 것', other: '아무튼 산 것' };
 const keywords: [Category, string[]][] = [
  ['cafe', ['커피','카페','아아','라떼','스벅','스타벅스','케이크','디저트','빵','도넛','마카롱','아메리카노']],
@@ -22,7 +24,7 @@ export function candidates(item: string, amount: number) {
  const category = categorize(item);
  return lines.filter(line => line.categories.includes(category) && amount >= line.min && amount <= line.max);
 }
-export function judge(item: string, amount: number, history: string[] = [], random = Math.random): Verdict {
+export function judge(item: string, amount: number, history: string[] = [], random = Math.random, previousGesture?: Gesture): Verdict {
  const error = validatePurchase(item, amount);
  if (error) throw new Error(error);
  const pool = candidates(item, amount);
@@ -30,18 +32,31 @@ export function judge(item: string, amount: number, history: string[] = [], rand
  const choices = unseen.length ? unseen : pool.filter(line => line.id !== history.at(-1));
  const available = choices.length ? choices : pool;
  const line = available[Math.min(available.length - 1, Math.floor(Math.max(0, random()) * available.length))];
- return { version: 1, item: item.trim(), amount, lineId: line.id };
+ const eligible = characters.filter(c=>c.expression===line.expression&&line.gestures.includes(c.gesture));
+ const different = eligible.filter(c=>c.gesture!==previousGesture);
+ const options = different.length?different:eligible;
+ const character = options[Math.min(options.length-1,Math.floor(Math.max(0,random())*options.length))];
+ return { version: 2, item: item.trim(), amount, lineId: line.id, characterId: character.id };
 }
 export function getLine(verdict: Verdict) {
  const line = lines.find(line => line.id === verdict.lineId);
  if (!line) throw new Error('존재하지 않는 대사');
  return { ...line, expression: line.expression as Expression };
 }
+export function characterFor(verdict: Verdict) {
+ const line=getLine(verdict);
+ return getCharacter(verdict.version===2?verdict.characterId:`${line.expression}-base`);
+}
 export function parseVerdict(value: unknown): Verdict | null {
  if (!value || typeof value !== 'object') return null;
  const v = value as Verdict;
- if (v.version !== 1 || validatePurchase(v.item, v.amount) || !candidates(v.item, v.amount).some(line => line.id === v.lineId)) return null;
- return { version: 1, item: v.item.trim(), amount: v.amount, lineId: v.lineId };
+ if ((v.version !== 1 && v.version !== 2) || validatePurchase(v.item, v.amount)) return null;
+ const line=candidates(v.item,v.amount).find(line=>line.id===v.lineId);
+ if(!line)return null;
+ const common={item:v.item.trim(),amount:v.amount,lineId:v.lineId};
+ if(v.version===1)return {version:1,...common};
+ const character=characters.find(c=>c.id===v.characterId&&c.expression===line.expression&&line.gestures.includes(c.gesture));
+ return character?{version:2,...common,characterId:character.id}:null;
 }
 export function encodeVerdict(verdict: Verdict) {
  return btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(verdict)))).replaceAll('+','-').replaceAll('/','_').replace(/=+$/, '');
