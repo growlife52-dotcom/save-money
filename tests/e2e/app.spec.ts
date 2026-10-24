@@ -88,10 +88,10 @@ test('sharing rejects malformed and cross-origin requests',async({request,baseUR
  expect((await request.get('/s/not-a-valid-id')).status()).toBe(404);
 });
 
-test('legacy shared links keep their original character pose',async({page})=>{
+test('legacy shared links use the matching photo fallback',async({page})=>{
  const old={version:1,item:'커피',amount:5000,lineId:'cafe-1'};
  const encoded=Buffer.from(JSON.stringify(old)).toString('base64url');
  await page.goto('/?r='+encoded);
- await expect(page.locator('.result-character img')).toHaveAttribute('src','/character-smug.svg');
+ await expect(page.locator('.result-character img')).toHaveAttribute('src','/character-photo-chin-smirk.svg');
  await expect(page.locator('.verdict-text')).toBeVisible();
 });

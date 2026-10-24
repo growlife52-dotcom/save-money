@@ -46,7 +46,7 @@ test('v2 preserves chosen character and legacy v1 keeps the original pose',()=>{
  assert.deepEqual(parseVerdict(result),result);
  const old={version:1 as const,item:'커피',amount:5000,lineId:'cafe-1'};
  assert.deepEqual(decodeVerdict(encodeVerdict(old)),old);
- assert.equal(characterFor(old).src,'/character-smug.svg');
+ assert.equal(characterFor(old).src,'/character-photo-chin-smirk.svg');
  assert.equal(parseVerdict({...result,characterId:'approve-base'}),null);
  assert.equal(parseVerdict({...result,characterId:'../../anything'}),null);
  assert.equal(parseVerdict({...result,characterId:undefined}),null);

@@ -10,8 +10,8 @@ const definitions = [
 ] as const;
 export const characters = definitions.map(([expression,gesture])=>({
  id:`${expression}-${gesture}`, expression, gesture,
- src:gesture==='base'?`/character-${expression}.svg`:`/character-${expression}-${gesture}.svg`,
- alt:`${gestureNames[gesture]} 자세의 ${expression==='approve'?'흐뭇한':expression==='shock'?'놀란':expression==='laugh'?'웃는':'능청스러운'} 잼민이`,
+ src:`/character-photo-${gesture==='base'?(expression==='shock'?'idea':'chin-smirk'):gesture}.svg`,
+ alt:`${gestureNames[gesture==='base'?(expression==='shock'?'idea':'chin-smirk'):gesture]} 자세로 빨간 티셔츠를 입은 남자아이 사진`,
 }));
 export function getCharacter(id: string) {
  const character=characters.find(c=>c.id===id);
