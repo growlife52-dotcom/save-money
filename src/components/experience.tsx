@@ -136,7 +136,7 @@ export default function Experience({initialVerdict = null, initialInvalidLink = 
      </motion.div>}
     </AnimatePresence>
    </main>
-   <footer><span className="footer-logo">야또샀냐.</span><span>소비는 네가, 심판은 내가.</span><button className="privacy-link" onClick={()=>setPrivacy(!privacy)} aria-expanded={privacy}>입력 정보 안내</button>{privacy&&<p className="privacy-copy">소비 입력은 기본적으로 브라우저에서 처리해요. 링크 복사 시 공유 결과에 항목·금액·대사가 포함돼요. 저장소가 연결되어 있으면 해당 정보가 서버에도 저장됩니다. 개인 정보는 적지 말아 주세요.</p>}</footer>
+   <footer><span className="footer-logo">야또샀냐.</span><span>소비는 네가, 심판은 내가.</span><button className="privacy-link" onClick={()=>setPrivacy(!privacy)} aria-expanded={privacy}>입력 정보 안내</button>{privacy&&<p className="privacy-copy">소비 입력은 기본적으로 브라우저에서 처리해요. 링크 복사 시 공유 결과에 항목·금액·대사가 포함돼요. 저장소가 연결되어 있으면 해당 정보가 서버에도 저장됩니다. 개인 정보는 적지 말아 주세요.</p>}<span className="creator-mark">GR</span></footer>
   </div>
   <AnimatePresence>{sheet&&<motion.div className="modal-backdrop" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={e=>{if(e.target===e.currentTarget)setSheet(false);}}><motion.div className="share-sheet" role="dialog" aria-modal="true" aria-labelledby="share-title" tabIndex={-1} ref={dialogRef} initial={{y:reduce?0:60}} animate={{y:0}} exit={{y:reduce?0:60}}>
    <button className="close-button" aria-label="공유 창 닫기" onClick={()=>setSheet(false)}>×</button><div className="sheet-handle"/><h2 id="share-title">이건 스토리 각이다</h2><p className="sheet-description">혼나긴 했는데… 나만 볼 순 없지 ㅋㅋ</p>
