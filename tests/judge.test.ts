@@ -23,7 +23,7 @@ test('no repeats until pool exhausted and no immediate repeats after exhaustion'
   assert.notEqual(result.lineId,history.at(-1));
   history.push(result.lineId);
  }
- assert.equal(new Set(history.slice(0,2)).size,2);
+ assert.equal(new Set(history).size,12);
 });
 test('invalid purchases are rejected',()=>{
  for(const amount of [0,-1,NaN,Infinity,1.5,1000000000])assert.ok(validatePurchase('커피',amount));
@@ -74,4 +74,31 @@ test('home is always the second photo and every category can select all three ju
   for(const n of [0,.4,.8]){const v=judge(item,5000,[],()=>n);chosen.add(characterFor(v).id);}
   assert.deepEqual([...chosen].sort(),judgeCharacters.map(c=>c.id).sort());
  }
+});
+
+test('amount dialogue covers exact boundaries across every category',()=>{
+ const boundaries:[number,string,number][]=[[1,'tiny',15],[5000,'tiny',15],[5001,'daily',14],[10000,'daily',14],[10001,'shopping',15],[50000,'shopping',15],[50001,'big',15],[999999999,'big',15]];
+ for(const item of ['밥','커피','옷','게임','휴지','무언가'])for(const [amount,band,count] of boundaries){
+  const pool=candidates(item,amount);
+  const added=pool.filter(line=>line.id.startsWith('amount-'));
+  assert.ok(added.every(line=>line.id.startsWith(`amount-${band}-`)));
+  // The pre-existing food stock joke replaces the equivalent new text in this pool.
+  const duplicate=item==='밥'&&amount===50000?1:0;
+  assert.equal(added.length,count-duplicate,`${item} ${amount}`);
+  for(const line of added){
+   const verdict={version:2 as const,item,amount,lineId:line.id,characterId:'judge-boy'};
+   assert.deepEqual(decodeVerdict(encodeVerdict(verdict)),verdict);
+  }
+ }
+});
+test('duplicate wording is not re-selected and old stock-joke links stay valid',()=>{
+ const item='밥',amount=40000;
+ const pool=candidates(item,amount);const history:string[]=[];const texts=new Set<string>();
+ for(let i=0;i<pool.length;i++){
+  const verdict=judge(item,amount,history,()=>0);
+  const text=pool.find(line=>line.id===verdict.lineId)!.text.replace(/[\s?!.,]/g,'');
+  assert.ok(!texts.has(text));texts.add(text);history.push(verdict.lineId);
+ }
+ assert.ok(parseVerdict({version:1,item,amount,lineId:'food-3'}));
+ assert.ok(parseVerdict({version:2,item,amount,lineId:'amount-shopping-01',characterId:'judge-boy'}));
 });

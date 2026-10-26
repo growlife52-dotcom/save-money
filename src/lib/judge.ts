@@ -20,9 +20,17 @@ export function validatePurchase(item: unknown, amount: unknown): string | null 
  if (typeof amount !== 'number' || !Number.isSafeInteger(amount) || amount < 1 || amount > 999999999) return '금액은 1원부터 999,999,999원까지 적어줘.';
  return null;
 }
-export function candidates(item: string, amount: number) {
+function eligibleLines(item: string, amount: number) {
  const category = categorize(item);
  return lines.filter(line => line.categories.includes(category) && amount >= line.min && amount <= line.max);
+}
+export function candidates(item: string, amount: number) {
+ const seen=new Set<string>();
+ return eligibleLines(item,amount).filter(line=>{
+  const key=line.text.replace(/[\s?!.,]/g,'');
+  if(seen.has(key))return false;
+  seen.add(key);return true;
+ });
 }
 export function judge(item: string, amount: number, history: string[] = [], random = Math.random, previousGesture?: Gesture): Verdict {
  const error = validatePurchase(item, amount);
@@ -50,7 +58,7 @@ export function parseVerdict(value: unknown): Verdict | null {
  if (!value || typeof value !== 'object') return null;
  const v = value as Verdict;
  if ((v.version !== 1 && v.version !== 2) || validatePurchase(v.item, v.amount)) return null;
- const line=candidates(v.item,v.amount).find(line=>line.id===v.lineId);
+ const line=eligibleLines(v.item,v.amount).find(line=>line.id===v.lineId);
  if(!line)return null;
  const common={item:v.item.trim(),amount:v.amount,lineId:v.lineId};
  if(v.version===1)return {version:1,...common};
